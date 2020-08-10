@@ -1,0 +1,47 @@
+@import "theme";
+
+$header-height: 60px;
+
+.App {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  & > header {
+    width: 100%;
+    height: $header-height;
+    background-color: $main-color;
+    color: $main-contrast;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 .5rem;
+    box-sizing: border-box;
+    flex: 0 0 auto;
+
+    & > h1 {
+      margin: 0 auto;
+      font-size: 2rem;
+      white-space: nowrap;
+      overflow-x: hidden;
+      text-overflow: ellipsis;
+    }
+
+    & > h1:not(:last-child) {
+      margin: 0;
+    }
+
+    & > button {
+      all: unset;
+      @include button;
+      font-size: 1rem;
+    }
+  }
+  & > .content-wrapper {
+    flex: 1 1 auto;
+    overflow: hidden auto;
+    display: flex;
+    flex-direction: column;
+  }
+}

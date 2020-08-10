@@ -1,26 +1,53 @@
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import './App.scss';
+import {
+    BrowserRouter as Router,
+    Switch,
+    Route
+} from "react-router-dom";
+import Header from "./Header";
+import {routes} from "./routes";
+import { TopBarContext } from './TopBarContext';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+interface AppState {
+    headerBtnText?: string;
+    headerBtnAction?: () => void;
+}
+
+class App extends React.Component<any, AppState> {
+    constructor(props: Readonly<any>) {
+        super(props);
+        this.state = {};
+    }
+
+    changeBtnHeader(text: string|null, action?: () => void) {
+        this.setState(text ? {
+            headerBtnText: text,
+            headerBtnAction: action
+        } : {headerBtnText: undefined, headerBtnAction: undefined})
+    }
+
+    render() {
+        return (
+            <div className="App">
+                <Router>
+                    <Header headerButtonText={this.state.headerBtnText}
+                            headerButtonAction={this.state.headerBtnAction}/>
+                    <TopBarContext.Provider value={{change: this.changeBtnHeader.bind(this)}}>
+                        <div className="content-wrapper">
+                            <Switch>
+                                {routes.map((route, idx) => <Route
+                                    key={idx}
+                                    path={route.path}
+                                    render={props => (<route.component {...props}/>)}
+                                />)}
+                            </Switch>
+                        </div>
+                    </TopBarContext.Provider>
+                </Router>
+            </div>
+        );
+    }
 }
 
 export default App;

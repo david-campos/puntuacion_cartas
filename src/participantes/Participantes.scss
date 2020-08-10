@@ -1,0 +1,62 @@
+@import "../theme";
+
+.Participantes {
+  padding: 1rem;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+
+  & > h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    text-align: center;
+  }
+  & > ul {
+    list-style: none;
+    padding: 0;
+    flex: 1 0 auto;
+
+    & > li {
+      display: flex;
+      align-items: center;
+      height: 3rem;
+
+      &:not(:last-child) {
+        border-bottom: 2px dotted rgba(0, 0, 0, .3);
+      }
+
+      & > .fas {
+        width: 3rem;
+        height: 3rem;
+        font-size: 3rem;
+
+        &.fa-venus {
+          color: #af4c96;
+        }
+
+        &.fa-mars {
+          color: #0000af;
+        }
+      }
+
+      & > input {
+        all: unset;
+        display: block;
+        height: 100%;
+        flex: 1 1 auto;
+        margin-right: 1rem;
+        width: 0;
+      }
+
+      & > .abbreviation {
+        opacity: .7;
+      }
+    }
+  }
+  & > button {
+    all: unset;
+    @include button;
+    width: 100%;
+    text-align: center;
+  }
+}
