@@ -5,19 +5,40 @@ $main-contrast: #f0f0f0;
 $second-color: #ffc400;
 $second-contrast: #212121;
 
-@mixin button {
-  background-color: $main-color;
-  color: $main-contrast;
-  &.secondary {
-    background-color: $second-color;
-    color: $second-contrast;
-  }
+$header-height: 60px;
 
+@mixin button {
   padding: .6em;
   box-sizing: border-box;
   border: none;
 
   border-radius: 10px;
   font-size: 1.5rem;
-  box-shadow: 5px 5px 10px 0 rgba(0,0,0,0.3);
+
+  transition: color 300ms ease-in-out, background-color 300ms ease-in-out;
+
+  &:not(:disabled) {
+    background-color: $main-color;
+    color: $main-contrast;
+
+    box-shadow: 5px 5px 10px 0 rgba(0, 0, 0, 0.3);
+
+    &.secondary {
+      background-color: $second-color;
+      color: $second-contrast;
+    }
+
+    &:focus {
+      outline: none;
+    }
+  }
+  &:disabled {
+    background-color: gray;
+    color: lightgray;
+  }
+  &:active {
+    box-shadow: 5px 5px 5px 0 rgba(0, 0, 0, 0.3);
+    transform: scale(.9, .9);
+    outline: none;
+  }
 }
