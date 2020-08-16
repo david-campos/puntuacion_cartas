@@ -21,6 +21,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background: $background;
   font-size: 16pt;
+  user-select: none;
 }
 
 #root {

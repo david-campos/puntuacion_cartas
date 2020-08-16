@@ -9,6 +9,10 @@
     box-sizing: border-box;
   }
 
+  td.rejoins {
+    color: red;
+  }
+
   td.state {
     width: 100%;
     display: flex;
@@ -36,7 +40,8 @@
     }
   }
 
-  .lost {
+  .lost td.participant,
+  .lost td.state > .cabron {
     text-decoration: line-through;
     color: #515151;
   }
