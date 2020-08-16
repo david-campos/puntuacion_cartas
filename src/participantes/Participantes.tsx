@@ -26,7 +26,7 @@ const focusInCurrentTarget = ({relatedTarget, currentTarget}: any) => {
 }
 
 const lastIsEmpty = (list: Participante[]) => list.length !== 0 && !list[list.length - 1].name;
-
+const LAST_PARTICIPANTS_KEY = 'last-participants';
 
 export default class Participantes extends React.Component<ParticipantesProps, ParticipantesState> {
     static contextType = TopBarContext;
@@ -36,16 +36,15 @@ export default class Participantes extends React.Component<ParticipantesProps, P
     constructor(props: Readonly<ParticipantesProps>) {
         super(props);
         this.mLastInputRef = createRef<HTMLInputElement>();
-        const parts: Participante[] = abbreviateList([
-            {name: "David", gender: "m"},
-            {name: "Ángeles", gender: "f"},
-            {name: "Arturo", gender: "m"}
-        ]);
+        const parts: Participante[] = JSON.parse(localStorage.getItem(LAST_PARTICIPANTS_KEY) || "[]");
+        if (props.withGender) {
+            // Last saved participants may not have gender, correct!
+            parts.forEach(p => p.gender = p.gender || 'm');
+        }
         this.state = {
             participantes: parts
         };
     }
-
 
     handleChange(participant: number, event: ChangeEvent<HTMLInputElement>) {
         if (!event.target) return;
@@ -62,8 +61,12 @@ export default class Participantes extends React.Component<ParticipantesProps, P
             const value = event.target.value;
             if (!value) {
                 this.setState(state => ({
-                    participantes: abbreviateList(state.participantes.filter((p, i) => i !== participant))
-                }));
+                        participantes: abbreviateList(state.participantes.filter((p, i) => i !== participant))
+                    }),
+                    () => localStorage.setItem(
+                        LAST_PARTICIPANTS_KEY,
+                        JSON.stringify(this.state.participantes))
+                );
             }
         }
     }
@@ -106,7 +109,10 @@ export default class Participantes extends React.Component<ParticipantesProps, P
     }
 
     componentDidMount() {
-        this.context.change("Comenzar", () => this.props.onResult(this.state.participantes));
+        this.context.change("Comenzar", () => {
+            localStorage.setItem(LAST_PARTICIPANTS_KEY, JSON.stringify(this.state.participantes));
+            this.props.onResult(this.state.participantes)
+        });
     }
 
     componentWillUnmount() {

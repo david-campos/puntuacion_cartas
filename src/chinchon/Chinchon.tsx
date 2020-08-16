@@ -2,6 +2,7 @@ import React, {ChangeEvent} from "react";
 import {Participante} from "../participantes/Participante";
 import Participantes from "../participantes/Participantes";
 import "./Chinchon.scss";
+import {TopBarContext} from "../TopBarContext";
 
 interface ChinchonState {
     participants?: Participante[];
@@ -12,11 +13,16 @@ interface ChinchonState {
 }
 
 const sum = (array: number[]) => array.reduce((p, c) => p + c, 0);
+const LAST_STATE_KEY = 'chinchon-state';
 
 export default class Chinchon extends React.Component<any, ChinchonState> {
+    static contextType = TopBarContext;
+
     constructor(props: Readonly<any>) {
         super(props);
-        this.state = {introducing: -1, modalText: ""};
+        const lastState = localStorage.getItem(LAST_STATE_KEY);
+        this.state =
+             lastState ? JSON.parse(lastState) : {introducing: -1, modalText: ""};
     }
 
     get isNextEnabled(): boolean {
@@ -27,7 +33,7 @@ export default class Chinchon extends React.Component<any, ChinchonState> {
         this.setState({
             participants,
             points: participants.map(() => [])
-        })
+        }, this.enableRestartButton.bind(this))
     }
 
     handleNext(): void {
@@ -74,6 +80,8 @@ export default class Chinchon extends React.Component<any, ChinchonState> {
             } while (sum(state.points[next]) > 100);
             newState.introducing = next;
             return newState;
+        }, () => {
+            localStorage.setItem(LAST_STATE_KEY, JSON.stringify(this.state))
         });
     }
 
@@ -101,6 +109,28 @@ export default class Chinchon extends React.Component<any, ChinchonState> {
     onModalTextChange(event: ChangeEvent<HTMLInputElement>) {
         if (!event.target) return;
         this.setState({modalText: event.target.value});
+    }
+
+    enableRestartButton() {
+        this.context.change("Reiniciar", () => {
+            localStorage.removeItem(LAST_STATE_KEY);
+            this.setState({
+                participants: undefined,
+                points: undefined,
+                introducing: -1,
+                modalAccumulation: undefined
+            });
+        });
+    }
+
+    componentDidMount() {
+        if (this.state.participants) {
+            this.enableRestartButton();
+        }
+    }
+
+    componentWillUnmount() {
+        this.context.change(null);
     }
 
     renderModal() {

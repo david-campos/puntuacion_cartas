@@ -2,6 +2,7 @@ import React from 'react';
 import './TuteCabron.scss';
 import Participantes from "../../participantes/Participantes";
 import {Participante} from "../../participantes/Participante";
+import {TopBarContext} from "../../TopBarContext";
 
 interface TuteCabronState {
     participants: Participante[] | null;
@@ -13,14 +14,21 @@ const STATES = {
     f: ["", "C", "CA", "CAB", "CABR", "CABRO", "CABRON", "CABRONA"]
 };
 
+const KEY_STATE = 'tute-cabron-state';
+
 export default class TuteCabron extends React.Component<any, TuteCabronState> {
+    static contextType = TopBarContext;
+
     constructor(props: Readonly<any>) {
         super(props);
-        this.state = {participants: null, letters: []};
+        const lastState = localStorage.getItem(KEY_STATE);
+        this.state = lastState ? JSON.parse(lastState) : {participants: null, letters: []};
     }
 
     onParticipantsSelected(participants: Participante[]) {
-        this.setState({participants, letters: new Array(participants.length).fill(0)});
+        this.setState(
+            {participants, letters: new Array(participants.length).fill(0)},
+            this.enableRestartButton.bind(this));
     }
 
     modify(delta: number, participant: number): void {
@@ -28,7 +36,27 @@ export default class TuteCabron extends React.Component<any, TuteCabronState> {
             letters: state.letters.map((l, i) => i === participant
                 ? Math.min(Math.max(0, l + delta), STATES.m.length - 1)
                 : l)
-        }));
+        }), () => localStorage.setItem(KEY_STATE, JSON.stringify(this.state)));
+    }
+
+    enableRestartButton() {
+        this.context.change("Reiniciar", () => {
+            localStorage.removeItem(KEY_STATE);
+            this.setState({
+                participants: null,
+                letters: []
+            });
+        });
+    }
+
+    componentDidMount() {
+        if (this.state.participants) {
+            this.enableRestartButton();
+        }
+    }
+
+    componentWillUnmount() {
+        this.context.change(null);
     }
 
     render() {
