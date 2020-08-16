@@ -19,6 +19,10 @@ export default class Chinchon extends React.Component<any, ChinchonState> {
         this.state = {introducing: -1, modalText: ""};
     }
 
+    get isNextEnabled(): boolean {
+        return this.state.introducing < 0 || !!this.state.modalText;
+    }
+
     setParticipants(participants: Participante[]) {
         this.setState({
             participants,
@@ -26,11 +30,20 @@ export default class Chinchon extends React.Component<any, ChinchonState> {
         })
     }
 
-    handleNext() {
+    handleNext(): void {
         this.next();
     }
 
+    handleKeyDown(event: React.KeyboardEvent): void {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            event.stopPropagation();
+            this.next();
+        }
+    }
+
     next(forcedScore: number | null = null) {
+        if (!this.isNextEnabled && forcedScore === null) return;
         this.setState(state => {
             if (!state.participants || state.points === undefined) return null;
             const modalAccumulation: Map<number, number> = state.introducing < 0 ?
@@ -99,6 +112,7 @@ export default class Chinchon extends React.Component<any, ChinchonState> {
             <input type="text" inputMode="numeric"
                    value={this.state.modalText}
                    onChange={this.onModalTextChange.bind(this)}
+                   onKeyDown={this.handleKeyDown.bind(this)}
                    maxLength={3} size={3}/>
             <div className="quick">
                 {new Array(5).fill(null).map((a, i) =>
@@ -122,7 +136,7 @@ export default class Chinchon extends React.Component<any, ChinchonState> {
             {this.renderModal()}
             <button className="next secondary"
                     onClick={this.handleNext.bind(this)}
-                    disabled={this.state.introducing >= 0 && !this.state.modalText}>
+                    disabled={!this.isNextEnabled}>
                 <i className={`fas fa-${this.state.introducing < 0 ? 'plus' : 'arrow-right'}`}/>
             </button>
             {columns}
