@@ -1,12 +1,32 @@
 import Home from "./home/Home";
 import TuteCabron from "./tute/cabron/TuteCabron";
-import Chinchon from "./chinchon/Chinchon";
+import ScoreTable from "./score_table/ScoreTable";
+import ChinchonModal from "./score_table/ChinchonModal";
+import {Component} from "react";
+import Escoba from "./escoba/Escoba";
 
-export const routes = [
+interface Route<P, C extends Component<P>> {
+    path: string,
+    component: C,
+    title: string,
+    extraProps?: P;
+}
+
+export const routes: Route<any, any>[] = [
     {
         path: "/chinchon",
-        component: Chinchon,
-        title: "Chinchón"
+        component: ScoreTable,
+        title: "Chinchón",
+        extraProps: {
+            modal: ChinchonModal,
+            maxPoints: 100,
+            stateStoringKey: 'chinchon-state'
+        }
+    },
+    {
+        path: "/escoba",
+        component: Escoba,
+        title: "Escoba"
     },
     {
         path: "/tute-cabron",

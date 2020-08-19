@@ -1,6 +1,6 @@
 @import "../theme";
 
-.Chinchon {
+.ScoreTable {
   display: flex;
   flex: 1 0 auto;
 
@@ -80,42 +80,4 @@
     }
   }
 
-  & > .introduceModal {
-    position: absolute;
-    width: 100%;
-    height: calc(100% -  #{$header-height});
-    background-color: white;
-    font-size: 3rem;
-
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 2rem 0;
-
-    & > input {
-      font-size: 3rem;
-      max-width: 100%;
-      text-align: center;
-      background: none;
-      border: 2px solid gray;
-      transition: border 300ms ease-in-out;
-      outline: none;
-      border-radius: 5px;
-      &:focus {
-        border-color: $second-color;
-      }
-    }
-    & > .quick {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin-top: 3rem;
-    }
-    button {
-      @include button;
-      margin: 5px;
-      font-size: 2rem;
-    }
-  }
 }

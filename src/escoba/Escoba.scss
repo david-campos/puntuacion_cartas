@@ -1,0 +1,49 @@
+@import "../theme";
+
+.Escoba {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 2rem 1rem;
+
+  .adder {
+    display: flex;
+    flex-direction: column;
+
+    & > .header, & > .line {
+      display: flex;
+      flex-direction: row;
+      border-top: 2px solid $main-color;
+
+      &:last-child {
+        border-bottom: 2px solid $main-color;
+      }
+
+      & > div {
+        border-left: 2px solid $main-color;
+        &:last-child {
+          border-right: 2px solid $main-color;
+        }
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 20%;
+        height: 2rem;
+        flex: 0 0 auto;
+
+        white-space: nowrap;
+        overflow-x: hidden;
+        text-overflow: ellipsis;
+
+        box-sizing: border-box;
+
+        &.checked {
+          background-color: $second-color;
+          color: $second-contrast;
+        }
+      }
+    }
+  }
+}

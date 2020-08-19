@@ -39,7 +39,7 @@ class App extends React.Component<any, AppState> {
                                 {routes.map((route, idx) => <Route
                                     key={idx}
                                     path={route.path}
-                                    render={props => (<route.component {...props}/>)}
+                                    render={props => (<route.component {...props} {...route.extraProps}/>)}
                                 />)}
                             </Switch>
                         </div>
