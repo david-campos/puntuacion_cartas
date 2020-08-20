@@ -4,44 +4,108 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
   padding: 2rem 1rem;
+  height: 100%;
 
-  .adder {
-    display: flex;
-    flex-direction: column;
+  .data {
+    flex: 1 1 auto;
+    margin-bottom: 1rem;
+    & > .participant {
+      display: flex;
+      & > div {
+        margin-right: 1rem;
+      }
+    }
+  }
 
-    & > .header, & > .line {
+  .input {
+    width: 100%;
+    text-align: center;
+    flex: 0 0 auto;
+
+    .adder {
       display: flex;
       flex-direction: row;
-      border-top: 2px solid $main-color;
+      width: 100%;
+      $border: 2px solid $main-color;
 
-      &:last-child {
-        border-bottom: 2px solid $main-color;
-      }
+      & > .header, & > .line {
+        display: flex;
+        flex-direction: column;
 
-      & > div {
-        border-left: 2px solid $main-color;
+        border-left: $border;
+
         &:last-child {
-          border-right: 2px solid $main-color;
+          border-right: $border;
         }
 
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 20%;
-        height: 2rem;
-        flex: 0 0 auto;
+        & > div {
+          border-top: $border;
 
-        white-space: nowrap;
-        overflow-x: hidden;
-        text-overflow: ellipsis;
+          &:last-child {
+            border-bottom: $border;
+          }
 
-        box-sizing: border-box;
+          display: flex;
+          align-items: center;
+          justify-content: center;
 
-        &.checked {
-          background-color: $second-color;
-          color: $second-contrast;
+          flex: 1 0 2.5rem;
+
+          &.escobas {
+            flex: 1 0 3rem;
+            padding: 0 .5rem;
+
+            .NumericInput {
+              width: 100%;
+            }
+          }
+
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+
+          box-sizing: border-box;
+        }
+      }
+
+      & > .header {
+        flex: 1;
+
+        & > div {
+          font-size: 1rem;
+
+          &:last-of-type {
+            border-right: none;
+          }
+        }
+      }
+
+      & > .line {
+        flex: 2;
+
+        & > div {
+          &:last-of-type {
+            background-color: $main-color;
+            color: $main-contrast;
+          }
+
+          &.checked {
+            background-color: $second-color;
+            color: $second-contrast;
+          }
+        }
+      }
+    }
+
+    .actions {
+      margin-top: .5rem;
+
+      button {
+        @include button;
+        margin: 0 .5rem;
+        &.add-btn > i {
+          margin-right: 1em;
         }
       }
     }

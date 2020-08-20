@@ -31,14 +31,14 @@ $header-height: 60px;
     &:focus {
       outline: none;
     }
+    &:active {
+      box-shadow: 5px 5px 5px 0 rgba(0, 0, 0, 0.3);
+      transform: scale(.9, .9);
+      outline: none;
+    }
   }
   &:disabled {
     background-color: gray;
     color: lightgray;
-  }
-  &:active {
-    box-shadow: 5px 5px 5px 0 rgba(0, 0, 0, 0.3);
-    transform: scale(.9, .9);
-    outline: none;
   }
 }
