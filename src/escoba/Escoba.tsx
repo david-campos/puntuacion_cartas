@@ -5,10 +5,7 @@ import Participantes from "../participantes/Participantes";
 import "./Escoba.scss";
 import NumericInput from "./NumericInput";
 
-interface EscobaState {
-    participants: Participante[] | null;
-    points: number[][];
-    stepPointer: number;
+interface EscobaRoundScore {
     velo: number;
     cartas: number | null;
     ouros: number | null;
@@ -16,79 +13,118 @@ interface EscobaState {
     escobas: number[];
 }
 
+interface EscobaState {
+    participants: Participante[] | null;
+    rounds: EscobaRoundScore[];
+    currentRound: number;
+}
+
+const arraySum = (arr1: number[], arr2: number[]) =>
+    arr1.length === arr2.length ? arr1.map((v, i) => v + arr2[i]) : [];
+
+
 export default class Escoba extends React.Component<{}, EscobaState> {
     constructor(props: ScoreTableModalProps, context: any) {
         super(props, context);
         this.state = {
             participants: null,
-            points: [],
-            stepPointer: 0,
-            velo: 0,
-            cartas: null,
-            ouros: null,
-            setes: null,
-            escobas: []
+            rounds: [this.newRoundScore(0)],
+            currentRound: 0
         };
     }
 
+    private getCurrentRound(state: EscobaState): EscobaRoundScore {
+        return state.rounds[state.currentRound];
+    }
+
+    private getRoundsUntilNow(state: EscobaState): EscobaRoundScore[] {
+        return state.rounds.slice(0, state.currentRound + 1);
+    }
+
+    private getRoundsUntilLast(state: EscobaState): EscobaRoundScore[] {
+        return state.rounds.slice(0, state.currentRound);
+    }
+
+    private getRoundPoints(round: EscobaRoundScore): number[] {
+        const array = round.escobas.slice();
+        array[round.velo]++;
+        if (round.setes !== null) array[round.setes]++;
+        if (round.ouros !== null) array[round.ouros]++;
+        if (round.cartas !== null) array[round.cartas]++;
+        return array;
+    }
+
+    private accumulatedPoints(state: EscobaState): number[] {
+        if (!state.participants) return [];
+        else return this.getRoundsUntilLast(state)
+            .map(round => this.getRoundPoints(round))
+            .reduce((p, c) => arraySum(p, c), new Array(state.participants.length).fill(0));
+    }
+
+    private newRoundScore: (numParticipants: number) => EscobaRoundScore
+        = (numParticipants: number) => ({
+        cartas: null,
+        escobas: new Array(numParticipants).fill(0),
+        ouros: null,
+        setes: null,
+        velo: 0
+    });
+
     changeVelo(value: number): void {
-        this.setState({velo: value});
+        this.setState(state => ({
+            rounds: state.rounds.map((r, idx) =>
+                idx === state.currentRound
+                    ? {...r, velo: value}
+                    : r)
+        }));
     }
 
-    changeCartas(value: number): void {
-        this.setState(state => ({cartas: state.cartas === value ? null : value}));
+    changeNullable(prop: keyof EscobaRoundScore, value: number | null) {
+        this.setState(state => ({
+            rounds: state.rounds.map((r, idx) =>
+                idx === state.currentRound
+                    ? {...r, [prop]: r[prop] === value ? null : value}
+                    : r
+            )
+        }));
     }
 
-    changeOuros(value: number): void {
-        this.setState(state => ({ouros: state.ouros === value ? null : value}));
-    }
-
-    changeSetes(value: number): void {
-        this.setState(state => ({setes: state.setes === value ? null : value}));
-    }
+    changeCartas = this.changeNullable.bind(this, 'cartas');
+    changeOuros = this.changeNullable.bind(this, 'ouros');
+    changeSetes = this.changeNullable.bind(this, 'setes');
 
     changeEscobas(index: number, value: number): void {
         this.setState(state => ({
-            escobas: state.escobas.map((e, i) => i === index ? value : e)
+            rounds: state.rounds.map((r, idx) => idx === state.currentRound
+                ? {...r, escobas: r.escobas.map((e, i) => i === index ? value : e)}
+                : r)
         }));
     }
 
     setParticipants(participants: Participante[]) {
         this.setState({
             participants,
-            points: new Array(participants.length).fill([]),
-            stepPointer: 0,
-            escobas: participants.map(() => 0)
+            currentRound: 0,
+            rounds: [this.newRoundScore(participants.length)]
         });
     }
 
-    sumFor(participant: number, useState: EscobaState | null = null): number {
-        const state = useState || this.state;
-        let value = state.escobas[participant] || 0;
-        if (state.velo === participant) value++;
-        if (state.setes === participant) value++;
-        if (state.ouros === participant) value++;
-        if (state.cartas === participant) value++;
-        return value;
-    }
-
     undo() {
-        this.setState(state => state.stepPointer > 0 ? {stepPointer: state.stepPointer - 1} : null);
+        this.setState(state =>
+            state.currentRound > 0 ? {currentRound: state.currentRound - 1} : null);
     }
 
     redo() {
-        this.setState(state => state.stepPointer < state.points[0].length ? {stepPointer: state.stepPointer + 1} : null);
+        this.setState(state =>
+            state.currentRound < state.rounds.length - 1 ? {currentRound: state.currentRound + 1} : null);
     }
 
     add() {
         this.setState(state => ({
-            points: state.points.map((p, idx) => p.slice(0, state.stepPointer).concat([this.sumFor(idx, state)])),
-            stepPointer: state.stepPointer + 1,
-            velo: 0,
-            cartas: null,
-            ouros: null,
-            setes: null,
-            escobas: new Array(state.points.length).fill(0)
+            rounds: this.getRoundsUntilNow(state).concat([
+                this.newRoundScore(state.participants ? state.participants.length : 0)
+            ]),
+            currentRound: state.currentRound + 1
         }));
     }
 
@@ -98,10 +134,10 @@ export default class Escoba extends React.Component<{}, EscobaState> {
         } else {
             return (<div className="Escoba">
                 <div className="data">
-                    {this.state.points.map((p, idx) =>
+                    {this.accumulatedPoints(this.state).map((score, idx) =>
                         (<div key={idx} className="participant">
                             <div>{this.state.participants ? this.state.participants[idx].name : 'Error'}</div>
-                            <div>{p.slice(0, this.state.stepPointer).reduce((p, c) => p + c, 0).toString(10)}</div>
+                            <div>{score.toString(10)}</div>
                         </div>)
                     )}
                 </div>
@@ -113,33 +149,37 @@ export default class Escoba extends React.Component<{}, EscobaState> {
                             <div>Cartas</div>
                             <div>Ouros</div>
                             <div>Setenta</div>
-                            <div className="no-border escobas"/>
+                            <div className="escobas">Escobas</div>
                             <div className="no-border"/>
                         </div>
                         {this.state.participants.map((p, idx) => (<div className="line" key={idx}>
                             <div>{p.abbreviated}</div>
                             <div onClick={this.changeVelo.bind(this, idx)}
-                                 className={this.state.velo === idx ? 'checked' : 'not-checked'}>
-                                <i className={`fas fa-${this.state.velo === idx ? 'check' : 'times'}`}/></div>
+                                 className={this.getCurrentRound(this.state).velo === idx ? 'checked' : 'not-checked'}>
+                                <i className={`fas fa-${this.getCurrentRound(this.state).velo === idx ? 'check' : 'times'}`}/>
+                            </div>
                             <div onClick={this.changeCartas.bind(this, idx)}
-                                 className={this.state.cartas === idx ? 'checked' : 'not-checked'}>
-                                <i className={`fas fa-${this.state.cartas === idx ? 'check' : 'times'}`}/></div>
+                                 className={this.getCurrentRound(this.state).cartas === idx ? 'checked' : 'not-checked'}>
+                                <i className={`fas fa-${this.getCurrentRound(this.state).cartas === idx ? 'check' : 'times'}`}/>
+                            </div>
                             <div onClick={this.changeOuros.bind(this, idx)}
-                                 className={this.state.ouros === idx ? 'checked' : 'not-checked'}>
-                                <i className={`fas fa-${this.state.ouros === idx ? 'check' : 'times'}`}/></div>
+                                 className={this.getCurrentRound(this.state).ouros === idx ? 'checked' : 'not-checked'}>
+                                <i className={`fas fa-${this.getCurrentRound(this.state).ouros === idx ? 'check' : 'times'}`}/>
+                            </div>
                             <div onClick={this.changeSetes.bind(this, idx)}
-                                 className={this.state.setes === idx ? 'checked' : 'not-checked'}>
-                                <i className={`fas fa-${this.state.setes === idx ? 'check' : 'times'}`}/></div>
+                                 className={this.getCurrentRound(this.state).setes === idx ? 'checked' : 'not-checked'}>
+                                <i className={`fas fa-${this.getCurrentRound(this.state).setes === idx ? 'check' : 'times'}`}/>
+                            </div>
                             <div className="escobas"><NumericInput
-                                value={this.state.escobas[idx]}
+                                value={this.getCurrentRound(this.state).escobas[idx]}
                                 min={0}
                                 onChange={v => this.changeEscobas(idx, v)}/></div>
-                            <div>{this.sumFor(idx)}</div>
+                            <div>{this.getRoundPoints(this.getCurrentRound(this.state))[idx]}</div>
                         </div>))}
                     </div>
                     <div className="actions">
                         <button className="undo"
-                                disabled={this.state.stepPointer <= 0}
+                                disabled={this.state.currentRound <= 0}
                                 onClick={this.undo.bind(this)}>
                             <i className="fas fa-undo"/>
                         </button>
@@ -149,7 +189,7 @@ export default class Escoba extends React.Component<{}, EscobaState> {
                             Engadir
                         </button>
                         <button className="redo"
-                                disabled={this.state.stepPointer >= this.state.points[0].length}
+                                disabled={this.state.currentRound >= this.state.rounds.length}
                                 onClick={this.redo.bind(this)}>
                             <i className="fas fa-redo"/>
                         </button>
