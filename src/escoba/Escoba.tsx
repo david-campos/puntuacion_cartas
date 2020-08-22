@@ -4,6 +4,7 @@ import {Participante} from "../participantes/Participante";
 import Participantes from "../participantes/Participantes";
 import "./Escoba.scss";
 import NumericInput from "./NumericInput";
+import {TopBarContext} from "../TopBarContext";
 
 interface EscobaRoundScore {
     velo: number;
@@ -22,30 +23,45 @@ interface EscobaState {
 const arraySum = (arr1: number[], arr2: number[]) =>
     arr1.length === arr2.length ? arr1.map((v, i) => v + arr2[i]) : [];
 
+const KEY_STATE = 'escoba-state';
 
 export default class Escoba extends React.Component<{}, EscobaState> {
+    static contextType = TopBarContext;
+
     constructor(props: ScoreTableModalProps, context: any) {
         super(props, context);
-        this.state = {
+        const lastStateStr = localStorage.getItem(KEY_STATE);
+        this.state = lastStateStr ? JSON.parse(lastStateStr) : {
             participants: null,
-            rounds: [this.newRoundScore(0)],
+            rounds: [],
             currentRound: 0
         };
     }
 
-    private getCurrentRound(state: EscobaState): EscobaRoundScore {
+    enableRestartButton() {
+        this.context.change("Reiniciar", () => {
+            localStorage.removeItem(KEY_STATE);
+            this.setState({
+                participants: null,
+                rounds: [],
+                currentRound: 0
+            });
+        });
+    }
+
+    private static getCurrentRound(state: EscobaState): EscobaRoundScore {
         return state.rounds[state.currentRound];
     }
 
-    private getRoundsUntilNow(state: EscobaState): EscobaRoundScore[] {
+    private static getRoundsUntilNow(state: EscobaState): EscobaRoundScore[] {
         return state.rounds.slice(0, state.currentRound + 1);
     }
 
-    private getRoundsUntilLast(state: EscobaState): EscobaRoundScore[] {
+    private static getRoundsUntilLast(state: EscobaState): EscobaRoundScore[] {
         return state.rounds.slice(0, state.currentRound);
     }
 
-    private getRoundPoints(round: EscobaRoundScore): number[] {
+    private static getRoundPoints(round: EscobaRoundScore): number[] {
         const array = round.escobas.slice();
         array[round.velo]++;
         if (round.setes !== null) array[round.setes]++;
@@ -56,8 +72,8 @@ export default class Escoba extends React.Component<{}, EscobaState> {
 
     private accumulatedPoints(state: EscobaState): number[] {
         if (!state.participants) return [];
-        else return this.getRoundsUntilLast(state)
-            .map(round => this.getRoundPoints(round))
+        else return Escoba.getRoundsUntilLast(state)
+            .map(round => Escoba.getRoundPoints(round))
             .reduce((p, c) => arraySum(p, c), new Array(state.participants.length).fill(0));
     }
 
@@ -106,26 +122,39 @@ export default class Escoba extends React.Component<{}, EscobaState> {
             participants,
             currentRound: 0,
             rounds: [this.newRoundScore(participants.length)]
-        });
+        }, this.enableRestartButton.bind(this));
+    }
+
+    componentDidMount() {
+        if (this.state.participants) {
+            this.enableRestartButton();
+        }
+    }
+
+    componentWillUnmount() {
+        this.context.change(null);
     }
 
     undo() {
         this.setState(state =>
-            state.currentRound > 0 ? {currentRound: state.currentRound - 1} : null);
+                state.currentRound > 0 ? {currentRound: state.currentRound - 1} : null,
+            () => localStorage.setItem(KEY_STATE, JSON.stringify(this.state)));
     }
 
     redo() {
         this.setState(state =>
-            state.currentRound < state.rounds.length - 1 ? {currentRound: state.currentRound + 1} : null);
+                state.currentRound < state.rounds.length - 1 ? {currentRound: state.currentRound + 1} : null,
+            () => localStorage.setItem(KEY_STATE, JSON.stringify(this.state)));
     }
 
     add() {
         this.setState(state => ({
-            rounds: this.getRoundsUntilNow(state).concat([
-                this.newRoundScore(state.participants ? state.participants.length : 0)
-            ]),
-            currentRound: state.currentRound + 1
-        }));
+                rounds: Escoba.getRoundsUntilNow(state).concat([
+                    this.newRoundScore(state.participants ? state.participants.length : 0)
+                ]),
+                currentRound: state.currentRound + 1
+            }),
+            () => localStorage.setItem(KEY_STATE, JSON.stringify(this.state)));
     }
 
     render() {
@@ -153,28 +182,28 @@ export default class Escoba extends React.Component<{}, EscobaState> {
                             <div className="no-border"/>
                         </div>
                         {this.state.participants.map((p, idx) => (<div className="line" key={idx}>
-                            <div>{p.abbreviated}</div>
+                            <div>{p.name}</div>
                             <div onClick={this.changeVelo.bind(this, idx)}
-                                 className={this.getCurrentRound(this.state).velo === idx ? 'checked' : 'not-checked'}>
-                                <i className={`fas fa-${this.getCurrentRound(this.state).velo === idx ? 'check' : 'times'}`}/>
+                                 className={Escoba.getCurrentRound(this.state).velo === idx ? 'checked' : 'not-checked'}>
+                                <i className={`fas fa-${Escoba.getCurrentRound(this.state).velo === idx ? 'check' : 'times'}`}/>
                             </div>
                             <div onClick={this.changeCartas.bind(this, idx)}
-                                 className={this.getCurrentRound(this.state).cartas === idx ? 'checked' : 'not-checked'}>
-                                <i className={`fas fa-${this.getCurrentRound(this.state).cartas === idx ? 'check' : 'times'}`}/>
+                                 className={Escoba.getCurrentRound(this.state).cartas === idx ? 'checked' : 'not-checked'}>
+                                <i className={`fas fa-${Escoba.getCurrentRound(this.state).cartas === idx ? 'check' : 'times'}`}/>
                             </div>
                             <div onClick={this.changeOuros.bind(this, idx)}
-                                 className={this.getCurrentRound(this.state).ouros === idx ? 'checked' : 'not-checked'}>
-                                <i className={`fas fa-${this.getCurrentRound(this.state).ouros === idx ? 'check' : 'times'}`}/>
+                                 className={Escoba.getCurrentRound(this.state).ouros === idx ? 'checked' : 'not-checked'}>
+                                <i className={`fas fa-${Escoba.getCurrentRound(this.state).ouros === idx ? 'check' : 'times'}`}/>
                             </div>
                             <div onClick={this.changeSetes.bind(this, idx)}
-                                 className={this.getCurrentRound(this.state).setes === idx ? 'checked' : 'not-checked'}>
-                                <i className={`fas fa-${this.getCurrentRound(this.state).setes === idx ? 'check' : 'times'}`}/>
+                                 className={Escoba.getCurrentRound(this.state).setes === idx ? 'checked' : 'not-checked'}>
+                                <i className={`fas fa-${Escoba.getCurrentRound(this.state).setes === idx ? 'check' : 'times'}`}/>
                             </div>
                             <div className="escobas"><NumericInput
-                                value={this.getCurrentRound(this.state).escobas[idx]}
+                                value={Escoba.getCurrentRound(this.state).escobas[idx]}
                                 min={0}
                                 onChange={v => this.changeEscobas(idx, v)}/></div>
-                            <div>{this.getRoundPoints(this.getCurrentRound(this.state))[idx]}</div>
+                            <div>{Escoba.getRoundPoints(Escoba.getCurrentRound(this.state))[idx]}</div>
                         </div>))}
                     </div>
                     <div className="actions">
@@ -189,7 +218,7 @@ export default class Escoba extends React.Component<{}, EscobaState> {
                             Engadir
                         </button>
                         <button className="redo"
-                                disabled={this.state.currentRound >= this.state.rounds.length}
+                                disabled={this.state.currentRound >= this.state.rounds.length - 1}
                                 onClick={this.redo.bind(this)}>
                             <i className="fas fa-redo"/>
                         </button>
