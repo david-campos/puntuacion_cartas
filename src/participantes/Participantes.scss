@@ -50,6 +50,12 @@
 
       & > .abbreviation {
         opacity: .7;
+        margin: 0 1rem;
+      }
+
+      & > .delete {
+        @include button;
+        font-size: 1rem;
       }
     }
   }

@@ -6,6 +6,8 @@ import {TopBarContext} from "../TopBarContext";
 interface ParticipantesProps {
     onResult: (participantes: Participante[]) => void;
     withGender?: boolean;
+    minParticipants?: number;
+    maxParticipants?: number;
 }
 
 interface ParticipantesState {
@@ -33,10 +35,22 @@ export default class Participantes extends React.Component<ParticipantesProps, P
 
     private mLastInputRef: React.RefObject<HTMLInputElement>;
 
+    private get minParticipants(): number {
+        return this.props.minParticipants || 2;
+    }
+
+    private cantAdd(state: ParticipantesState): boolean {
+        return lastIsEmpty(state.participantes) ||
+            (!!this.props.maxParticipants && state.participantes.length >= this.props.maxParticipants);
+    }
+
     constructor(props: Readonly<ParticipantesProps>) {
         super(props);
         this.mLastInputRef = createRef<HTMLInputElement>();
-        const parts: Participante[] = JSON.parse(localStorage.getItem(LAST_PARTICIPANTS_KEY) || "[]");
+        let parts: Participante[] = JSON.parse(localStorage.getItem(LAST_PARTICIPANTS_KEY) || "[]");
+        if (props.maxParticipants) {
+            parts = parts.slice(0, props.maxParticipants);
+        }
         if (props.withGender) {
             // Last saved participants may not have gender, correct!
             parts.forEach(p => p.gender = p.gender || 'm');
@@ -56,17 +70,25 @@ export default class Participantes extends React.Component<ParticipantesProps, P
         }));
     }
 
+    remove(participant: number) {
+        this.setState(state => ({
+                participantes: abbreviateList(state.participantes.filter((p, i) => i !== participant))
+            }),
+            () => {
+                localStorage.setItem(
+                    LAST_PARTICIPANTS_KEY,
+                    JSON.stringify(this.state.participantes));
+                if (this.state.participantes.length < this.minParticipants) {
+                    this.context.change(null);
+                }
+            });
+    }
+
     handleBlur(participant: number, event: FocusEvent<HTMLInputElement>) {
         if (!focusInCurrentTarget(event)) {
             const value = event.target.value;
             if (!value) {
-                this.setState(state => ({
-                        participantes: abbreviateList(state.participantes.filter((p, i) => i !== participant))
-                    }),
-                    () => localStorage.setItem(
-                        LAST_PARTICIPANTS_KEY,
-                        JSON.stringify(this.state.participantes))
-                );
+                this.remove(participant);
             }
         }
     }
@@ -101,18 +123,31 @@ export default class Participantes extends React.Component<ParticipantesProps, P
     addParticipant(): void {
         const newParticipant = this.newParticipant();
         this.setState(state =>
-                lastIsEmpty(state.participantes) ?
+                this.cantAdd(state) ?
                     state :
                     {participantes: abbreviateList(state.participantes.concat([newParticipant]))},
-            () => this.mLastInputRef.current && this.mLastInputRef.current.focus()
+            () => {
+                this.mLastInputRef.current && this.mLastInputRef.current.focus();
+                if (this.state.participantes.length >= this.minParticipants) {
+                    this.addStartButton();
+                }
+            }
         );
     }
 
-    componentDidMount() {
+    addStartButton() {
         this.context.change("Comenzar", () => {
-            localStorage.setItem(LAST_PARTICIPANTS_KEY, JSON.stringify(this.state.participantes));
-            this.props.onResult(this.state.participantes)
+            if (this.state.participantes.length >= this.minParticipants) {
+                localStorage.setItem(LAST_PARTICIPANTS_KEY, JSON.stringify(this.state.participantes));
+                this.props.onResult(this.state.participantes);
+            }
         });
+    }
+
+    componentDidMount() {
+        if (this.state.participantes.length >= this.minParticipants) {
+            this.addStartButton();
+        }
     }
 
     componentWillUnmount() {
@@ -138,12 +173,16 @@ export default class Participantes extends React.Component<ParticipantesProps, P
                                    ref={idx === this.state.participantes.length - 1 ? this.mLastInputRef : undefined}
                             />
                             <span className="abbreviation">{p.abbreviated}</span>
+                            <button className="delete"
+                                    onClick={this.remove.bind(this, idx)}>
+                                <i className="fas fa-trash"/>
+                            </button>
                         </li>)
                     )
                 }
             </ul>
             {
-                lastIsEmpty(this.state.participantes) ?
+                this.cantAdd(this.state) ?
                     null :
                     (<button className="secondary"
                              onClick={this.addParticipant.bind(this)}>
