@@ -10,13 +10,21 @@ interface Route<P, C extends Component<P>> {
     component: C,
     title: string,
     extraProps?: P;
+    inHome?: boolean;
 }
 
 export const routes: Route<any, any>[] = [
     {
+        path: "/tute-cabron",
+        component: TuteCabron,
+        inHome: true,
+        title: "Tute cabrón"
+    },
+    {
         path: "/chinchon",
         component: ScoreTable,
         title: "Chinchón",
+        inHome: true,
         extraProps: {
             modal: ChinchonModal,
             maxPoints: 100,
@@ -26,12 +34,8 @@ export const routes: Route<any, any>[] = [
     {
         path: "/escoba",
         component: Escoba,
+        inHome: true,
         title: "Escoba"
-    },
-    {
-        path: "/tute-cabron",
-        component: TuteCabron,
-        title: "Tute cabrón"
     },
     {
         path: "/",

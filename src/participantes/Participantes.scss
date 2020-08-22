@@ -59,10 +59,25 @@
       }
     }
   }
-  & > button {
-    all: unset;
-    @include button;
-    width: 100%;
-    text-align: center;
+
+  & > .actions {
+    display: flex;
+
+    & > button {
+      flex: 1;
+
+      &:not(:last-child) {
+        margin-right: 1rem;
+      }
+
+      all: unset;
+      @include button;
+      width: 100%;
+      text-align: center;
+
+      & > i {
+        margin-right: 1rem;
+      }
+    }
   }
 }

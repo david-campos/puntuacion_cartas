@@ -70,14 +70,20 @@ export default class Participantes extends React.Component<ParticipantesProps, P
         }));
     }
 
+    clear() {
+        this.setState({participantes: []},
+            () => {
+                if (this.state.participantes.length < this.minParticipants) {
+                    this.context.change(null);
+                }
+            });
+    }
+
     remove(participant: number) {
         this.setState(state => ({
                 participantes: abbreviateList(state.participantes.filter((p, i) => i !== participant))
             }),
             () => {
-                localStorage.setItem(
-                    LAST_PARTICIPANTS_KEY,
-                    JSON.stringify(this.state.participantes));
                 if (this.state.participantes.length < this.minParticipants) {
                     this.context.change(null);
                 }
@@ -181,14 +187,23 @@ export default class Participantes extends React.Component<ParticipantesProps, P
                     )
                 }
             </ul>
-            {
-                this.cantAdd(this.state) ?
-                    null :
-                    (<button className="secondary"
-                             onClick={this.addParticipant.bind(this)}>
-                        Nuevo
-                    </button>)
-            }
+            <div className="actions">
+                {
+                    this.state.participantes.length === 0 ?
+                        null :
+                        (<button className="secondary" onClick={this.clear.bind(this)}>
+                            <i className="fas fa-broom"/> Vaciar
+                        </button>)
+                }
+                {
+                    this.cantAdd(this.state) ?
+                        null :
+                        (<button className="secondary"
+                                 onClick={this.addParticipant.bind(this)}>
+                            <i className="fas fa-user-plus"/> Novo
+                        </button>)
+                }
+            </div>
         </div>);
     }
 }
