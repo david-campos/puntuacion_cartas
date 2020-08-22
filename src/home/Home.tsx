@@ -8,7 +8,7 @@ export default class Home extends React.Component<any, any> {
         return (<ul className="Home">
             {routes
                 .filter(r => r.inHome)
-                .map(r => <li><Link to={r.path}>{r.title}</Link></li>)
+                .map((r, idx) => <li key={idx}><Link to={r.path}>{r.title}</Link></li>)
             }
         </ul>);
     }

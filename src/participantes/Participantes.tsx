@@ -17,7 +17,7 @@ interface ParticipantesState {
 const focusInCurrentTarget = ({relatedTarget, currentTarget}: any) => {
     if (relatedTarget === null) return false;
 
-    var node = relatedTarget.parentNode;
+    let node = relatedTarget.parentNode;
 
     while (node !== null) {
         if (node === currentTarget) return true;
