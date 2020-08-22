@@ -6,6 +6,7 @@ export interface ScoreTableModalProps {
     /** true for each enabled participant */
     enabled: boolean[];
     onNewScores: (scores: Map<number, number>) => void;
+    setNextEnabled(enabled: boolean): void;
 }
 
 export interface IScoreTableModal extends Component<ScoreTableModalProps> {

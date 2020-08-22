@@ -9,6 +9,7 @@ interface ScoreTableState {
     participants?: Participante[];
     points: number[][];
     modalOpen: boolean;
+    nextEnabled: boolean;
 }
 
 interface ScoreTableProps {
@@ -29,7 +30,8 @@ export default class ScoreTable extends React.Component<ScoreTableProps, ScoreTa
         const lastState = localStorage.getItem(props.stateStoringKey);
         this.state = lastState ? JSON.parse(lastState) : {
             modalOpen: false,
-            points: []
+            points: [],
+            nextEnabled: true
         };
     }
 
@@ -48,7 +50,8 @@ export default class ScoreTable extends React.Component<ScoreTableProps, ScoreTa
                 if (toAdd !== undefined) list.push(toAdd);
                 return list;
             }),
-            modalOpen: false
+            modalOpen: false,
+            nextEnabled: true
         }), () => localStorage.setItem(this.props.stateStoringKey, JSON.stringify(this.state)));
     }
 
@@ -58,7 +61,8 @@ export default class ScoreTable extends React.Component<ScoreTableProps, ScoreTa
             this.setState({
                 participants: undefined,
                 points: [],
-                modalOpen: false
+                modalOpen: false,
+                nextEnabled: true
             });
         });
     }
@@ -112,6 +116,7 @@ export default class ScoreTable extends React.Component<ScoreTableProps, ScoreTa
             (<ModalTag participants={this.state.participants}
                        enabled={this.state.points.map(p => sum(p) <= this.props.maxPoints)}
                        onNewScores={this.mixScores.bind(this)}
+                       setNextEnabled={enabled => this.setState({nextEnabled: enabled})}
                        ref={this.modalRef}/>)
             : null;
         const columns = this.state.participants.map((p, i) =>
@@ -124,7 +129,7 @@ export default class ScoreTable extends React.Component<ScoreTableProps, ScoreTa
             {modal}
             <button className="next secondary"
                     onClick={this.handleNext.bind(this)}
-                    disabled={!!this.modalRef.current && !this.modalRef.current.isNextEnabled}>
+                    disabled={!this.state.nextEnabled}>
                 <i className={`fas fa-${this.state.modalOpen ? 'arrow-right' : 'plus'}`}/>
             </button>
             {columns}

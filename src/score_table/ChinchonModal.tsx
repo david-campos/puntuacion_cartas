@@ -14,18 +14,19 @@ export default class ChinchonModal extends React.Component<ScoreTableModalProps,
         super(props, context);
         this.state = {
             modalAccumulation: new Map(),
-            introducing: 0,
+            introducing: this.findNextIdx(-1),
             modalText: ""
         };
     }
 
     get isNextEnabled(): boolean {
-        return this.state.introducing >= 0 || !!this.state.modalText;
+        return !!this.state.modalText;
     }
 
     onModalTextChange(event: ChangeEvent<HTMLInputElement>) {
         if (!event.target) return;
-        this.setState({modalText: event.target.value});
+        this.setState({modalText: event.target.value},
+            () => this.props.setNextEnabled(this.isNextEnabled));
     }
 
     handleKeyDown(event: React.KeyboardEvent): void {
@@ -36,6 +37,17 @@ export default class ChinchonModal extends React.Component<ScoreTableModalProps,
         }
     }
 
+    findNextIdx(current: number): number {
+        let next = current;
+        do {
+            next++;
+            if (next >= this.props.participants.length) {
+                break;
+            }
+        } while (!this.props.enabled[next]);
+        return next;
+    }
+
     next(forcedScore: number | null = null) {
         if (!this.isNextEnabled && forcedScore === null) return;
         this.setState(state => {
@@ -44,24 +56,22 @@ export default class ChinchonModal extends React.Component<ScoreTableModalProps,
                     state.introducing,
                     forcedScore === null ? parseInt(state.modalText, 10) : forcedScore
                 );
-            const newState: any = {
+            return {
                 modalText: "",
-                modalAccumulation
+                modalAccumulation,
+                introducing: this.findNextIdx(state.introducing)
             };
-            let next = state.introducing;
-            do {
-                next++;
-                if (next >= this.props.participants.length) {
-                    break;
-                }
-            } while (!this.props.enabled[next]);
-            newState.introducing = next;
-            return newState;
         }, () => {
             if (this.state.introducing >= this.props.participants.length) {
                 this.props.onNewScores(new Map(this.state.modalAccumulation || []));
+            } else {
+                this.props.setNextEnabled(this.isNextEnabled);
             }
         });
+    }
+
+    componentDidMount() {
+        this.props.setNextEnabled(this.isNextEnabled);
     }
 
     render() {
