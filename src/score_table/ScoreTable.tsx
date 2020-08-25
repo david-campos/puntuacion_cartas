@@ -5,9 +5,12 @@ import {TopBarContext} from "../TopBarContext";
 import "./ScoreTable.scss";
 import {IScoreTableModal, ScoreTableModalProps} from "./ScoreTableModal";
 
+type Run = number[];
+type ParticipantRuns = Run[];
+
 interface ScoreTableState {
     participants?: Participante[];
-    points: number[][];
+    points: ParticipantRuns[];
     modalOpen: boolean;
     nextEnabled: boolean;
 }
@@ -35,23 +38,44 @@ export default class ScoreTable extends React.Component<ScoreTableProps, ScoreTa
         };
     }
 
+    get enabledParticipants(): boolean[] {
+        return this.state.points.map(runs =>
+            sum(runs[runs.length - 1]) <= this.props.maxPoints);
+    }
+
     setParticipants(participants: Participante[]) {
         this.setState({
             participants,
-            points: participants.map(() => [])
+            points: participants.map(() => [[]])
         }, this.enableRestartButton.bind(this))
     }
 
     mixScores(scores: Map<number, number>): void {
         this.setState(state => ({
-            points: state.points.map((list, participantIdx) => {
-                list = list.slice();
+            points: state.points.map((participantRuns, participantIdx) => {
                 const toAdd = scores.get(participantIdx);
-                if (toAdd !== undefined) list.push(toAdd);
-                return list;
+                const nRuns = participantRuns.length;
+                if (toAdd !== undefined && nRuns > 0) {
+                    participantRuns = participantRuns.slice(); // Do not modify previous array!
+                    participantRuns.splice(
+                        nRuns - 1, 1,
+                        participantRuns[nRuns - 1].concat([toAdd])
+                    );
+                }
+                return participantRuns;
             }),
             modalOpen: false,
             nextEnabled: true
+        }), () => localStorage.setItem(this.props.stateStoringKey, JSON.stringify(this.state)));
+    }
+
+    rejoin(participant: number): void {
+        this.setState(state => ({
+            points: state.points.map((runs, idx) =>
+                idx === participant ?
+                    runs.concat([[]]) :
+                    runs
+            )
         }), () => localStorage.setItem(this.props.stateStoringKey, JSON.stringify(this.state)));
     }
 
@@ -85,25 +109,49 @@ export default class ScoreTable extends React.Component<ScoreTableProps, ScoreTa
         }
     }
 
-    private renderPoints(participant: number): JSX.Element[] | null {
-        if (this.state.points.length <= participant) return null;
-        const points = this.state.points[participant].slice();
-        let sum = points.shift();
-        if (sum === undefined) return null;
+    private renderRun(run: Run, runIdx: number, lastWithContent: boolean): JSX.Element {
+        run = run.slice();
+        let sum = run.shift();
         const lines = [];
-        let index = 0;
-        for (const next of points) {
-            const extraClass = next >= 0 ? 'positive' : 'negative';
-            lines.push(<div className="line" key={index}>
-                <span className="sum">{sum}</span>
-                <span className={"plus " + extraClass}>{next >= 0 ? '+' : '-'}</span>
-                <span className={"next " + extraClass}>{Math.abs(next)}</span>
-            </div>);
-            sum += next;
-            index++;
+        if (sum === undefined) {
+            sum = 0;
+            if (runIdx > 0) {
+                lines.push(<div className="rejoined"><i className="fas fa-undo"/></div>);
+            }
+        } else {
+            let lineIdx = 0;
+            for (const next of run) {
+                const extraClass = next >= 0 ? 'positive' : 'negative';
+                lines.push(<div className="line" key={lineIdx}>
+                    <span className="sum">{sum}</span>
+                    <span className={"plus " + extraClass}>{next >= 0 ? '+' : '-'}</span>
+                    <span className={"next " + extraClass}>{Math.abs(next)}</span>
+                </div>);
+                sum += next;
+                lineIdx++;
+            }
+            lines.push(<div className="total" key={lineIdx}>{sum}{
+                lastWithContent && runIdx > 0 ? <span className="extra-rounds">(+{runIdx})</span> : null
+            }</div>);
         }
-        lines.push(<div className="total" key={index}>{sum}</div>);
-        return lines;
+        const classes = `run${sum > this.props.maxPoints ? ' lost' : ''}`;
+        return <div className={classes} key={runIdx}>{lines}</div>;
+    }
+
+    private renderRuns(participant: number): (JSX.Element | null)[] | null {
+        const runs = this.state.points[participant];
+        if (runs !== undefined) {
+            return runs.flatMap((run, idx) => [
+                this.renderRun(run, idx, idx === runs.length - 1 || runs[idx+1].length === 0),
+                idx === runs.length - 1 && sum(run) > this.props.maxPoints ?
+                    <button className="rejoin" key={idx + 1}
+                            onClick={this.rejoin.bind(this, participant)}>
+                        <i className="fas fa-undo"/>
+                        Entrar
+                    </button> :
+                    null
+            ]);
+        } else return null;
     }
 
     render() {
@@ -114,15 +162,15 @@ export default class ScoreTable extends React.Component<ScoreTableProps, ScoreTa
         const ModalTag = this.props.modal;
         const modal = this.state.modalOpen ?
             (<ModalTag participants={this.state.participants}
-                       enabled={this.state.points.map(p => sum(p) <= this.props.maxPoints)}
+                       enabled={this.enabledParticipants}
                        onNewScores={this.mixScores.bind(this)}
                        setNextEnabled={enabled => this.setState({nextEnabled: enabled})}
                        ref={this.modalRef}/>)
             : null;
         const columns = this.state.participants.map((p, i) =>
-            <div className={"column" + (this.state.points && sum(this.state.points[i]) > this.props.maxPoints ? ' lost' : '')} key={i}>
+            <div className={`column${this.enabledParticipants[i] ? '' : ' lost'}`} key={i}>
                 <div className="name">{p.abbreviated}</div>
-                {this.renderPoints(i)}
+                {this.renderRuns(i)}
             </div>
         );
         return (<div className="ScoreTable">

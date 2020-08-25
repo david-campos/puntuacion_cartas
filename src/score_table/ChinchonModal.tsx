@@ -10,6 +10,8 @@ interface ChinchonModalState {
 
 export default class ChinchonModal extends React.Component<ScoreTableModalProps, ChinchonModalState>
     implements IScoreTableModal {
+    private inputRef = React.createRef<HTMLInputElement>();
+
     constructor(props: ScoreTableModalProps, context: any) {
         super(props, context);
         this.state = {
@@ -21,6 +23,12 @@ export default class ChinchonModal extends React.Component<ScoreTableModalProps,
 
     get isNextEnabled(): boolean {
         return !!this.state.modalText;
+    }
+
+    focusInput() {
+        if (this.inputRef.current) {
+            this.inputRef.current.focus();
+        }
     }
 
     onModalTextChange(event: ChangeEvent<HTMLInputElement>) {
@@ -66,12 +74,14 @@ export default class ChinchonModal extends React.Component<ScoreTableModalProps,
                 this.props.onNewScores(new Map(this.state.modalAccumulation || []));
             } else {
                 this.props.setNextEnabled(this.isNextEnabled);
+                this.focusInput();
             }
         });
     }
 
     componentDidMount() {
         this.props.setNextEnabled(this.isNextEnabled);
+        this.focusInput();
     }
 
     render() {
@@ -84,11 +94,8 @@ export default class ChinchonModal extends React.Component<ScoreTableModalProps,
                    value={this.state.modalText}
                    onChange={this.onModalTextChange.bind(this)}
                    onKeyDown={this.handleKeyDown.bind(this)}
-                   maxLength={3} size={3}/>
-            <div className="quick">
-                {new Array(5).fill(null).map((a, i) =>
-                    <button key={i} onClick={this.next.bind(this, i)}>{i}</button>)}
-            </div>
+                   maxLength={3} size={3}
+                   ref={this.inputRef}/>
             <button onClick={this.next.bind(this, -10)}>-10</button>
         </div>);
     }

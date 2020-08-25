@@ -2,6 +2,7 @@
 
 .ChinchonModal {
   position: absolute;
+  z-index: 10;
   width: 100%;
   height: calc(100% -  #{$header-height});
   box-sizing: border-box;
@@ -26,12 +27,6 @@
     &:focus {
       border-color: $second-color;
     }
-  }
-  & > .quick {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-top: 3rem;
   }
   button {
     @include button;
