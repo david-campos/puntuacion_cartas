@@ -8,6 +8,7 @@ interface ParticipantesProps {
     withGender?: boolean;
     minParticipants?: number;
     maxParticipants?: number;
+    teams?: boolean;
 }
 
 interface ParticipantesState {
@@ -29,11 +30,13 @@ const focusInCurrentTarget = ({relatedTarget, currentTarget}: any) => {
 
 const lastIsEmpty = (list: Participante[]) => list.length !== 0 && !list[list.length - 1].name;
 const LAST_PARTICIPANTS_KEY = 'last-participants';
+const LAST_TEAMS_KEY = 'last-teams';
 
 export default class Participantes extends React.Component<ParticipantesProps, ParticipantesState> {
     static contextType = TopBarContext;
 
-    private mLastInputRef: React.RefObject<HTMLInputElement>;
+    private readonly mLastInputRef: React.RefObject<HTMLInputElement>;
+    private readonly useKey: typeof LAST_PARTICIPANTS_KEY | typeof LAST_TEAMS_KEY;
 
     private get minParticipants(): number {
         return this.props.minParticipants || 2;
@@ -46,8 +49,9 @@ export default class Participantes extends React.Component<ParticipantesProps, P
 
     constructor(props: Readonly<ParticipantesProps>) {
         super(props);
+        this.useKey = props.teams ? LAST_TEAMS_KEY : LAST_PARTICIPANTS_KEY;
         this.mLastInputRef = createRef<HTMLInputElement>();
-        let parts: Participante[] = JSON.parse(localStorage.getItem(LAST_PARTICIPANTS_KEY) || "[]");
+        let parts: Participante[] = JSON.parse(localStorage.getItem(this.useKey) || "[]");
         if (props.maxParticipants) {
             parts = parts.slice(0, props.maxParticipants);
         }
@@ -144,7 +148,7 @@ export default class Participantes extends React.Component<ParticipantesProps, P
     addStartButton() {
         this.context.change("Comenzar", () => {
             if (this.state.participantes.length >= this.minParticipants) {
-                localStorage.setItem(LAST_PARTICIPANTS_KEY, JSON.stringify(this.state.participantes));
+                localStorage.setItem(this.useKey, JSON.stringify(this.state.participantes));
                 this.props.onResult(this.state.participantes);
             }
         });
@@ -162,7 +166,7 @@ export default class Participantes extends React.Component<ParticipantesProps, P
 
     render() {
         return (<div className="Participantes">
-            <h2>Seleccionar participantes</h2>
+            <h2>Seleccionar {this.props.teams ? 'equipos' : 'participantes'}</h2>
             <ul>
                 {
                     this.state.participantes.map((p, idx) =>

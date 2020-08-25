@@ -160,7 +160,7 @@ export default class Escoba extends React.Component<{}, EscobaState> {
     render() {
         if (!this.state.participants) {
             return <Participantes onResult={this.setParticipants.bind(this)} withGender={false}
-                                  maxParticipants={4}/>;
+                                  maxParticipants={4} teams={true}/>;
         } else {
             return (<div className="Escoba">
                 <div className="data">
