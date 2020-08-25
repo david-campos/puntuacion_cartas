@@ -144,7 +144,7 @@ export default class ScoreTable extends React.Component<ScoreTableProps, ScoreTa
         if (sum === undefined) {
             sum = 0;
             if (runIdx > 0) {
-                lines.push(<div className="rejoined"><i className="fas fa-undo"/></div>);
+                lines.push(<div key={0} className="rejoined"><i className="fas fa-undo"/></div>);
             }
         } else {
             let lineIdx = 0;
