@@ -1,0 +1,65 @@
+@import "../../theme";
+
+.LosersSelector {
+  padding: .5rem;
+
+  .title, .participant {
+    width: 100%;
+
+    & > div {
+      width: 50%;
+      display: inline-block;
+      &.winner {
+        background-color: $second-color;
+        color: $second-contrast;
+      }
+      &.loser {
+        background-color: $main-color;
+        color: $main-contrast;
+      }
+    }
+  }
+
+  .title {
+    text-align: center;
+  }
+
+  .participant {
+    cursor: pointer;
+
+    margin: .25rem 0;
+
+    box-shadow: inset 2px 2px 5px 0 rgba(0, 0, 0, 0.5),
+    inset -2px -2px 5px 0 rgba(255, 255, 255, 0.5);
+    border-radius: 6px;
+    padding: 2px;
+    box-sizing: border-box;
+
+    & > div {
+      border-radius: 5px;
+      padding: .5rem;
+      transition: all .15s ease-in-out;
+      box-sizing: border-box;
+      box-shadow: 2px 2px 5px 0 rgba(0, 0, 0, 0.5);
+
+      &.winner {
+        transform: translateX(0);
+      }
+
+      &.loser {
+        transform: translateX(100%);
+      }
+    }
+
+    &.disabled {
+      cursor: default;
+      color: gray;
+      & > div {
+        transform: translateX(50%);
+        background-color: $main-contrast;
+        color: $main-color;
+        text-decoration: line-through;
+      }
+    }
+  }
+}
