@@ -84,7 +84,9 @@ export default class TuteCabron extends React.Component<any, TuteCabronState> {
         this.setState(state => {
             const value =
                 delta > 0
-                    ? state.letters.filter((l, i) => i !== participant).reduce((p, c) => p < c ? c : p, 0)
+                    ? state.letters
+                        .filter((l, i) => i !== participant)
+                        .reduce((p, c) => p < c && c < STATES.m.length - 1 ? c : p, 0)
                     : STATES.m.length - 1
             return {
                 rejoined: (state.rejoined || (state.letters.map(() => 0))).map(
