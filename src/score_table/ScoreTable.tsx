@@ -43,6 +43,17 @@ export default class ScoreTable extends React.Component<ScoreTableProps, ScoreTa
             sum(runs[runs.length - 1]) <= this.props.maxPoints);
     }
 
+    getLastRunTopSteps(state: ScoreTableState): number {
+        return state.points.length === 0 ?
+            0 :
+            state.points.map(runs => runs[runs.length - 1])
+                .reduce((p, c) => p >= c.length ? p : c.length, 0);
+    }
+
+    get undoIsDisabled(): boolean {
+        return this.getLastRunTopSteps(this.state) === 0;
+    }
+
     setParticipants(participants: Participante[]) {
         this.setState({
             participants,
@@ -77,6 +88,23 @@ export default class ScoreTable extends React.Component<ScoreTableProps, ScoreTa
                     runs
             )
         }), () => localStorage.setItem(this.props.stateStoringKey, JSON.stringify(this.state)));
+    }
+
+    undo(): void {
+        this.setState(state => {
+            const topSteps = this.getLastRunTopSteps(state);
+            const points = state.points.map(runs => {
+                runs = runs.slice();
+                const lastIdx = runs.length - 1;
+                const lastRun = runs[lastIdx];
+                if (lastRun.length === topSteps) {
+                    runs.splice(lastIdx, 1,
+                        lastRun.slice(0, lastRun.length - 1)); // Remove last step
+                }
+                return runs;
+            });
+            return {points};
+        });
     }
 
     enableRestartButton() {
@@ -142,7 +170,7 @@ export default class ScoreTable extends React.Component<ScoreTableProps, ScoreTa
         const runs = this.state.points[participant];
         if (runs !== undefined) {
             return runs.flatMap((run, idx) => [
-                this.renderRun(run, idx, idx === runs.length - 1 || runs[idx+1].length === 0),
+                this.renderRun(run, idx, idx === runs.length - 1 || runs[idx + 1].length === 0),
                 idx === runs.length - 1 && sum(run) > this.props.maxPoints ?
                     <button className="rejoin" key={idx + 1}
                             onClick={this.rejoin.bind(this, participant)}>
@@ -175,6 +203,11 @@ export default class ScoreTable extends React.Component<ScoreTableProps, ScoreTa
         );
         return (<div className="ScoreTable">
             {modal}
+            <button className="undo secondary"
+                    onClick={this.undo.bind(this)}
+                    disabled={this.undoIsDisabled}>
+                <i className="fas fa-undo"/>
+            </button>
             <button className="next secondary"
                     onClick={this.handleNext.bind(this)}
                     disabled={!this.state.nextEnabled}>

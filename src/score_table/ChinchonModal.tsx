@@ -22,7 +22,7 @@ export default class ChinchonModal extends React.Component<ScoreTableModalProps,
     }
 
     get isNextEnabled(): boolean {
-        return !!this.state.modalText;
+        return !!this.state.modalText.replace(/[^0-9-]/g, '');
     }
 
     focusInput() {
@@ -62,7 +62,7 @@ export default class ChinchonModal extends React.Component<ScoreTableModalProps,
             const modalAccumulation: Map<number, number> =
                 new Map(state.modalAccumulation || []).set(
                     state.introducing,
-                    forcedScore === null ? parseInt(state.modalText, 10) : forcedScore
+                    forcedScore === null ? parseInt(state.modalText.replace(/[^0-9-]/g, ''), 10) : forcedScore
                 );
             return {
                 modalText: "",
