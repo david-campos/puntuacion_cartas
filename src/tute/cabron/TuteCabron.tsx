@@ -82,17 +82,19 @@ export default class TuteCabron extends React.Component<any, TuteCabronState> {
 
     rejoinModify(delta: number, participant: number): void {
         this.setState(state => {
-            const value =
-                delta > 0
-                    ? state.letters
-                        .filter((l, i) => i !== participant)
-                        .reduce((p, c) => p < c && c < STATES.m.length - 1 ? c : p, 0)
-                    : STATES.m.length - 1
+            const value = delta > 0
+                ? state.letters
+                    .filter((l, i) => i !== participant) // remove self
+                    .reduce((p, c) => p < c && c < STATES.m.length - 1 ? c : p, 0) // top non lost
+                : STATES.m.length - 1
+            // Either rejoined or 0's for all players if empty / non-existent
+            const rejoinedBase = state.rejoined && state.rejoined.length > 0
+                ? state.rejoined
+                : state.letters.map(() => 0);
             return {
-                rejoined: (state.rejoined || (state.letters.map(() => 0))).map(
-                    (rejoined, participantIdx) => participantIdx === participant
-                        ? Math.max(0, rejoined + delta)
-                        : rejoined),
+                rejoined: rejoinedBase.map((rejoined, i) =>
+                    i === participant ? Math.max(0, rejoined + delta) : rejoined
+                ),
                 letters: state.letters.map((l, i) => i === participant ? value : l)
             };
         }, this.saveState.bind(this));
@@ -144,7 +146,7 @@ export default class TuteCabron extends React.Component<any, TuteCabronState> {
                 if (!p.gender) continue;
                 lis.push(<tr key={i} className={l === STATES.m.length - 1 ? "lost" : ""}>
                     <td className="participant">{p.abbreviated}</td>
-                    <td className="rejoins">{this.state.rejoined && this.state.rejoined[i] ? `+${this.state.rejoined[i]}` : ''}</td>
+                    <td className="rejoins">{r ? `+${r}` : ''}</td>
                     <td className="state">
                         <div className="state-btn">
                             {l > 0 ?
