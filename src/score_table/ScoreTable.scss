@@ -77,17 +77,23 @@
       }
 
       & > .line {
-        padding: 0 .5rem;
+        padding: .1rem;
         display: flex;
+        justify-content: space-between;
+        height: 1.1em;
+        box-sizing: border-box;
 
         & > .sum,
         & > .next {
-          flex: 2 1 40%;
+          width: 45%;
+          min-width: min-content;
         }
 
         & > .plus {
-          flex: 1 1 20%;
+          width: 10%;
           text-align: center;
+          margin: 0 0.2em;
+          min-width: min-content;
         }
 
         & > .next {

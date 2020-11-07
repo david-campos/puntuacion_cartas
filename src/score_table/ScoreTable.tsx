@@ -38,16 +38,41 @@ export default class ScoreTable extends React.Component<ScoreTableProps, ScoreTa
         };
     }
 
+    pointsLast(participant: number, state: ScoreTableState = this.state) {
+        const runs = state.points[participant];
+        return sum(runs[runs.length - 1]);
+    }
+
+    topPoints(state: ScoreTableState = this.state): number {
+        return state.points
+            .filter(runs => !this.lastRunIsLost(runs))
+            .map(runs => sum(runs[runs.length - 1]))
+            .reduce((p, c) => c > p ? c : p, 0);
+    }
+
+    lastRunIsLost(runs: ParticipantRuns): boolean {
+        return runs.length === 0 || this.isLostRun(runs[runs.length - 1]);
+    }
+
+    isLostRun(run: Run): boolean {
+        return sum(run) > this.props.maxPoints;
+    }
+
+    isPlaying(state: ScoreTableState, participant: number): boolean {
+        return !this.lastRunIsLost(state.points[participant]);
+    }
+
     get enabledParticipants(): boolean[] {
-        return this.state.points.map(runs =>
-            sum(runs[runs.length - 1]) <= this.props.maxPoints);
+        return this.state.points.map(runs => !this.lastRunIsLost(runs));
     }
 
     getLastRunTopSteps(state: ScoreTableState): number {
-        return state.points.length === 0 ?
-            0 :
-            state.points.map(runs => runs[runs.length - 1])
-                .reduce((p, c) => p >= c.length ? p : c.length, 0);
+        if (state.points.length === 0) return 0;
+        const lastGame = Math.max(...state.points.map(runs => runs.length - 1));
+        return state.points
+            .filter(runs => runs.length > lastGame)
+            .map(runs => runs[lastGame])
+            .reduce((p, c) => p >= c.length ? p : c.length, 0);
     }
 
     get undoIsDisabled(): boolean {
@@ -81,13 +106,18 @@ export default class ScoreTable extends React.Component<ScoreTableProps, ScoreTa
     }
 
     rejoin(participant: number): void {
-        this.setState(state => ({
-            points: state.points.map((runs, idx) =>
-                idx === participant ?
-                    runs.concat([[]]) :
-                    runs
-            )
-        }), () => localStorage.setItem(this.props.stateStoringKey, JSON.stringify(this.state)));
+        this.setState(state => {
+            const keepLast = this.getLastRunTopSteps(state) === 1;
+            const participantNewRun = [this.topPoints(state)];
+            const othersNewRun = (idx: number) => [this.pointsLast(idx, state)];
+            const shouldAddRun = (idx: number) => idx === participant || (this.isPlaying(state, idx) && !keepLast);
+            return {
+                points: state.points.map((runs, idx) => shouldAddRun(idx)
+                    ? runs.concat([idx === participant ? participantNewRun : othersNewRun(idx)])
+                    : runs
+                )
+            };
+        }, () => localStorage.setItem(this.props.stateStoringKey, JSON.stringify(this.state)));
     }
 
     undo(): void {
@@ -137,12 +167,12 @@ export default class ScoreTable extends React.Component<ScoreTableProps, ScoreTa
         }
     }
 
-    private renderRun(run: Run, runIdx: number, lastWithContent: boolean): JSX.Element {
+    private renderRun(run: Run, runIdx: number, lost: number, fixedLength: number, last: boolean): JSX.Element {
+        const lostThis = this.isLostRun(run);
         run = run.slice();
         let sum = run.shift();
         const lines = [];
         if (sum === undefined) {
-            sum = 0;
             if (runIdx > 0) {
                 lines.push(<div key={0} className="rejoined"><i className="fas fa-undo"/></div>);
             }
@@ -158,27 +188,36 @@ export default class ScoreTable extends React.Component<ScoreTableProps, ScoreTa
                 sum += next;
                 lineIdx++;
             }
+            while (lineIdx < fixedLength - 1) {
+                lines.push(<div className="line empty" key={lineIdx}/>);
+                lineIdx++;
+            }
             lines.push(<div className="total" key={lineIdx}>{sum}{
-                lastWithContent && runIdx > 0 ? <span className="extra-rounds">(+{runIdx})</span> : null
+                lost > 0 && last ? <span className="extra-rounds">(+{lost})</span> : null
             }</div>);
         }
-        const classes = `run${sum > this.props.maxPoints ? ' lost' : ''}`;
+        const classes = `run${lostThis ? ' lost' : ''}`;
         return <div className={classes} key={runIdx}>{lines}</div>;
     }
 
-    private renderRuns(participant: number): (JSX.Element | null)[] | null {
+    private renderRuns(participant: number, fixedLengths: number[]): (JSX.Element | null)[] | null {
         const runs = this.state.points[participant];
         if (runs !== undefined) {
-            return runs.flatMap((run, idx) => [
-                this.renderRun(run, idx, idx === runs.length - 1 || runs[idx + 1].length === 0),
-                idx === runs.length - 1 && sum(run) > this.props.maxPoints ?
-                    <button className="rejoin" key={idx + 1}
-                            onClick={this.rejoin.bind(this, participant)}>
+            const rendered = [];
+            let lost = 0;
+            for (let idx = 0; idx < runs.length; ++idx) {
+                const run = runs[idx];
+                rendered.push(this.renderRun(run, idx, lost, fixedLengths[idx], idx === runs.length - 1));
+                if (idx === runs.length - 1 && this.isLostRun(run)) {
+                    rendered.push(<button className="rejoin" key={idx + 1}
+                                          onClick={this.rejoin.bind(this, participant)}>
                         <i className="fas fa-undo"/>
                         Entrar
-                    </button> :
-                    null
-            ]);
+                    </button>);
+                }
+                if (this.isLostRun(run)) ++lost;
+            }
+            return rendered;
         } else return null;
     }
 
@@ -195,10 +234,17 @@ export default class ScoreTable extends React.Component<ScoreTableProps, ScoreTa
                        setNextEnabled={enabled => this.setState({nextEnabled: enabled})}
                        ref={this.modalRef}/>)
             : null;
+        const runsLengths = this.state.points
+            .map(runs => runs.map(run => run.length))
+            .reduce((p, c) =>
+                c.slice(0, p.length).map((cRunLen, i) => Math.max(p[i], cRunLen))
+                    .concat(c.slice(p.length))
+                    .concat(p.slice(c.length))
+            );
         const columns = this.state.participants.map((p, i) =>
             <div className={`column${this.enabledParticipants[i] ? '' : ' lost'}`} key={i}>
                 <div className="name">{p.abbreviated}</div>
-                {this.renderRuns(i)}
+                {this.renderRuns(i, runsLengths)}
             </div>
         );
         return (<div className="ScoreTable">
