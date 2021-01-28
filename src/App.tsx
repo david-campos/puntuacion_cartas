@@ -8,6 +8,7 @@ import {
 import Header from "./Header";
 import {routes} from "./routes";
 import { TopBarContext } from './TopBarContext';
+import packageJson from '../package.json';
 
 interface AppState {
     headerBtnText?: string;
@@ -30,7 +31,7 @@ class App extends React.Component<any, AppState> {
     render() {
         return (
             <div className="App">
-                <Router>
+                <Router basename={packageJson.homepage}>
                     <Header headerButtonText={this.state.headerBtnText}
                             headerButtonAction={this.state.headerBtnAction}/>
                     <TopBarContext.Provider value={{change: this.changeBtnHeader.bind(this)}}>
